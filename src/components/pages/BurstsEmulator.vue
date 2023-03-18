@@ -2,6 +2,13 @@
   <AppLayout>
     <Card>
       <form @submit.prevent="doLoadTest" v-if="endpoint">
+        <div class="mb-4">
+          Endpoint:
+          <input class="inline-block" disabled :value="endpoint"/>
+          &nbsp;
+          <span class="underline text-blue-700 cursor-pointer" @click="currentPageSlug = 'config'">Change</span>
+        </div>
+
         <Input label="Requests per second" type="number" min="1" max="50" required v-model="rPerSec"/>
         <Input label="Load test duration (s)" class="mt-4" type="number" required v-model="duration"/>
         <Button type="submit" class="mt-4 ml-auto" :disabled="isRunning">
@@ -14,7 +21,7 @@
       </p>
     </Card>
 
-    <Card class="mt-8">
+    <Card class="mt-8" v-if="testLog.length > 0">
       <h2 class="font-bold text-lg mb-4">
         Results
       </h2>
@@ -32,7 +39,7 @@
             Duration
           </td>
           <td colspan="2">
-            {{ !isRunning ? (actualDuration + ' seconds') : '' }}
+            {{ ! isRunning ? (actualDuration + ' seconds') : '' }}
           </td>
         </tr>
         <tr>
@@ -63,6 +70,38 @@
           </td>
         </tr>
       </table>
+
+      <table class="mt-8 w-full max-w-sm">
+        <tr class="font-bold text-left border-b border-gray-300">
+          <th>
+
+          </th>
+          <th>
+            Duration (ms)
+          </th>
+          <th>
+            OK
+          </th>
+          <th>
+            Instance
+          </th>
+        </tr>
+        <tr v-for="(li, idx) in testLog" :key="idx" class="border-b border-gray-300">
+          <td>
+            {{ idx }}
+          </td>
+          <td>
+            {{ li.duration }}
+          </td>
+          <td>
+            <CheckIcon v-if="li.ok" class="w-4 h-4 text-green-800"/>
+            <XMarkIcon v-else class="w-4 h-4 text-red-800"/>
+          </td>
+          <td>
+            {{ li.instance }}
+          </td>
+        </tr>
+      </table>
     </Card>
   </AppLayout>
 </template>
@@ -72,6 +111,7 @@ import AppLayout from "../layouts/AppLayout.vue";
 import Card from "../containers/Card.vue";
 import Button from "../forms/Button.vue";
 import Input from "../forms/Input.vue";
+import { CheckIcon, XMarkIcon } from "@heroicons/vue/24/outline/index.js";
 import { computed, inject, ref } from "vue";
 
 const currentPageSlug = inject( 'currentPageSlug' )
@@ -82,7 +122,7 @@ const duration = ref( 1 )
 let currentInterval = null
 const isRunning = computed( () => currentInterval !== null )
 
-const actualDuration = ref(null)
+const actualDuration = ref( null )
 let testLog = ref( [] )
 const durationSum = computed( () => {
   return testLog.value
@@ -105,15 +145,16 @@ const doSingleRequest = async () => {
     testLog.value.push( {
       startTime,
       duration: Date.now() - startTime,
-      ok: response.ok
+      ok: response.ok,
+      instance: 'unknown'
     } )
   } catch ( err ) {
 
     console.error( err )
-    testLog.value.push({
+    testLog.value.push( {
       startTime,
       duration: Date.now() - startTime
-    })
+    } )
   }
 }
 const doLoadTest = () => {
@@ -139,12 +180,12 @@ const stopLoadTest = () => {
   return currentInterval !== null && clearInterval( currentInterval )
 }
 
-function median(arr) {
-  if (arr.length === 0) {
+function median( arr ) {
+  if ( arr.length === 0 ) {
     return; // 0.
   }
-  arr.sort((a, b) => a - b)
-  const midpoint = Math.floor(arr.length / 2)
+  arr.sort( ( a, b ) => a - b )
+  const midpoint = Math.floor( arr.length / 2 )
   return arr.length % 2 === 1 ?
       arr[midpoint] :
       (arr[midpoint - 1] + arr[midpoint]) / 2
