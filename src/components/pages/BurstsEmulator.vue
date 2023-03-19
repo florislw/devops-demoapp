@@ -128,7 +128,7 @@ import Card from "../containers/Card.vue";
 import Button from "../forms/Button.vue";
 import Input from "../forms/Input.vue";
 import { CheckIcon, XMarkIcon } from "@heroicons/vue/24/outline/index.js";
-import { computed, inject, ref } from "vue";
+import { computed, inject, onBeforeUnmount, ref } from "vue";
 
 const currentPageSlug = inject( 'currentPageSlug' )
 const endpoint = localStorage.getItem( 'endpoint' )
@@ -208,18 +208,6 @@ const doSingleRequest = async () => {
           } )
         }
       } )
-
-  // testLog.value.push( {
-  //   startTime,
-  //   duration: Date.now() - startTime,
-  //   ok: response.ok,
-  //   instanceHeader: 'unknown'
-  // } )
-  //
-  // testLog.value.push( {
-  //   startTime,
-  //   duration: Date.now() - startTime
-  // } )
 }
 const doLoadTest = () => {
   const intervalMs = 1000 / parseFloat( rPerSec.value )
@@ -254,6 +242,8 @@ function median( arr ) {
       arr[midpoint] :
       (arr[midpoint - 1] + arr[midpoint]) / 2
 }
+
+onBeforeUnmount( stopLoadTest )
 </script>
 
 <style scoped>
