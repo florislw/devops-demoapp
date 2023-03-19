@@ -11,9 +11,14 @@
 
         <Input label="Requests per second" type="number" min="1" max="50" required v-model="rPerSec"/>
         <Input label="Load test duration (s)" class="mt-4" type="number" required v-model="duration"/>
-        <Button type="submit" class="mt-4 ml-auto" :disabled="isRunning">
-          Start
-        </Button>
+        <div class="flex mt-4 justify-end">
+          <Button type="button" class="mr-4" @click="stopLoadTest" v-if="isRunning">
+            Stop
+          </Button>
+          <Button type="submit" :disabled="isRunning">
+            Start
+          </Button>
+        </div>
       </form>
       <p v-else>
         <span class="underline text-blue-700 cursor-pointer" @click="currentPageSlug = 'config'">
