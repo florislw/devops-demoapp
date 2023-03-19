@@ -1,6 +1,6 @@
 <template>
   <AppLayout title="Configuration">
-    <Card class="max-w-md">
+    <Card>
       <form @submit.prevent="saveEndpoint">
         <Input label="Request endpoint" type="url" v-model="endpoint"/>
 

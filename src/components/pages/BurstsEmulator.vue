@@ -23,7 +23,7 @@
 
     <Card class="mt-8" v-if="testLog.length > 0">
       <h2 class="font-bold text-lg mb-4">
-        Results
+        Summary
       </h2>
       <table>
         <tr>
@@ -58,7 +58,7 @@
             Mean
           </td>
           <td>
-            {{ durationSum / testLog.length || 0 }} ms
+            {{ durationMean }} ms
           </td>
         </tr>
         <tr>
@@ -66,12 +66,22 @@
             Median
           </td>
           <td>
-            {{ median( testLog.map( li => li.duration | 0 ) ) }} ms
+            {{ durationMedian }} ms
           </td>
         </tr>
       </table>
+    </Card>
+    <Card class="mt-8">
 
-      <table class="mt-8 w-full max-w-sm">
+      <h2 class="font-bold text-lg mb-4">
+        Requests
+      </h2>
+
+      <div class="mt-4">
+        <Input label="Show all requests" id="show-all-requests" v-model="tableShowAll" type="checkbox"/>
+      </div>
+
+      <table class="mt-8 w-full">
         <tr class="font-bold text-left border-b border-gray-300">
           <th>
 
@@ -80,25 +90,30 @@
             Duration (ms)
           </th>
           <th>
-            OK
+            X-Generated-By
           </th>
           <th>
-            Instance
+            Status
           </th>
+
         </tr>
-        <tr v-for="(li, idx) in testLog" :key="idx" class="border-b border-gray-300">
+        <tr v-for="(li, idx) in testLogTableData" :key="idx" class="border-b border-gray-300">
           <td>
-            {{ idx }}
+            {{ testLog.length - idx }}
           </td>
           <td>
-            {{ li.duration }}
+            <div class="flex items-center mr-8">
+              <meter min="0" :max="durationMax" optimum="0" :low="Math.round(durationMean)" :high="Math.round(durationMean) * 1.5" :value="li.duration" class="mr-2 w-full"/>
+              <span class="min-w-[6ch]">{{ li.duration }}</span>
+            </div>
           </td>
           <td>
-            <CheckIcon v-if="li.ok" class="w-4 h-4 text-green-800"/>
-            <XMarkIcon v-else class="w-4 h-4 text-red-800"/>
+            {{ li.serverHeader }}
           </td>
           <td>
-            {{ li.instance }}
+            <CheckIcon v-if="li.ok" class="w-4 h-4 text-green-800 inline"/>
+            <XMarkIcon v-else class="w-4 h-4 text-red-800 inline"/>
+            {{ li.status }} {{ li.statusText }}
           </td>
         </tr>
       </table>
@@ -117,6 +132,8 @@ import { computed, inject, ref } from "vue";
 const currentPageSlug = inject( 'currentPageSlug' )
 const endpoint = localStorage.getItem( 'endpoint' )
 
+const tableShowAll = ref( false )
+
 const rPerSec = ref( 1 )
 const duration = ref( 1 )
 let currentInterval = null
@@ -124,38 +141,73 @@ const isRunning = computed( () => currentInterval !== null )
 
 const actualDuration = ref( null )
 let testLog = ref( [] )
-const durationSum = computed( () => {
-  return testLog.value
-      .map( li => li.duration | 0 )
-      .reduce( ( a, b ) => a + b, 0 )
+
+const testLogTableData = computed( () => {
+  const {value} = testLog
+  if ( ! value ) {
+    return []
+  }
+
+  const data = tableShowAll.value ? value : value.slice( Math.max( value.length - 5, 0 ) )
+
+  return data.reverse()
 } )
+
+const durations = computed( () => testLog.value.map( li => li.duration | 0 ) )
+const durationSum = computed( () => durations.value.reduce( ( a, b ) => a + b, 0 ) )
+const durationMean = computed( () => durationSum.value / testLog.value.length || 0 )
+const durationMedian = computed( () => median( durations.value ) )
+const durationMax = computed( () => Math.max( ...durations.value ) )
 
 const doSingleRequest = async () => {
   const startTime = Date.now()
 
-  try {
-    const response = await fetch( endpoint, {
-      mode: 'no-cors',
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-    } )
+  fetch( endpoint, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+    },
+  } )
+      .then( response => {
+        testLog.value.push( {
+          startTime,
+          duration: Date.now() - startTime,
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText,
+          serverHeader: response.headers.get( 'X-Generated-By' )
+        } )
+      } )
+      .catch( error => {
+        if ( error instanceof Response ) {
+          testLog.value.push( {
+            startTime,
+            duration: Date.now() - startTime,
+            ok: error.ok,
+            status: error.status,
+            statusText: error.statusText,
+            serverHeader: error.headers.get( 'X-Generated-By' )
+          } )
+        } else {
+          testLog.value.push( {
+            startTime,
+            duration: Date.now() - startTime,
+            ok: false,
+          } )
+        }
+      } )
 
-    testLog.value.push( {
-      startTime,
-      duration: Date.now() - startTime,
-      ok: response.ok,
-      instance: 'unknown'
-    } )
-  } catch ( err ) {
-
-    console.error( err )
-    testLog.value.push( {
-      startTime,
-      duration: Date.now() - startTime
-    } )
-  }
+  // testLog.value.push( {
+  //   startTime,
+  //   duration: Date.now() - startTime,
+  //   ok: response.ok,
+  //   instanceHeader: 'unknown'
+  // } )
+  //
+  // testLog.value.push( {
+  //   startTime,
+  //   duration: Date.now() - startTime
+  // } )
 }
 const doLoadTest = () => {
   const intervalMs = 1000 / parseFloat( rPerSec.value )
