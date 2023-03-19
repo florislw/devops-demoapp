@@ -39,7 +39,7 @@
             Duration
           </td>
           <td colspan="2">
-            {{ ! isRunning ? (actualDuration + ' seconds') : '' }}
+            {{ isRunning ?  'running...' : (actualDuration + ' seconds') }}
           </td>
         </tr>
         <tr>
@@ -71,7 +71,7 @@
         </tr>
       </table>
     </Card>
-    <Card class="mt-8">
+    <Card class="mt-8" v-if="testLog.length > 0">
 
       <h2 class="font-bold text-lg mb-4">
         Requests
@@ -137,8 +137,8 @@ const tableShowAll = ref( false )
 
 const rPerSec = ref( 1 )
 const duration = ref( 1 )
-let currentInterval = null
-const isRunning = computed( () => currentInterval !== null )
+let currentInterval = ref(null)
+const isRunning = computed( () => currentInterval.value !== null )
 
 const actualDuration = ref( null )
 let testLog = ref( [] )
@@ -221,7 +221,7 @@ const doLoadTest = () => {
   testLog.value = []
   const startTime = Date.now()
 
-  currentInterval = setInterval( doSingleRequest, intervalMs )
+  currentInterval.value = setInterval( doSingleRequest, intervalMs )
   setTimeout( () => {
     actualDuration.value = (Date.now() - startTime) / 1000
     stopLoadTest()
@@ -229,7 +229,8 @@ const doLoadTest = () => {
 }
 
 const stopLoadTest = () => {
-  return currentInterval !== null && clearInterval( currentInterval )
+  currentInterval.value !== null && clearInterval( currentInterval.value )
+  currentInterval.value = null
 }
 
 function median( arr ) {
