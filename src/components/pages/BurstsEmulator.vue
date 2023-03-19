@@ -103,7 +103,8 @@
           </td>
           <td>
             <div class="flex items-center mr-8">
-              <meter min="0" :max="durationMax" optimum="0" :low="Math.round(durationMean)" :high="Math.round(durationMean) * 1.5" :value="li.duration" class="mr-2 w-full"/>
+              <meter min="0" :max="durationMax" optimum="0" :low="Math.round(durationMean)"
+                     :high="Math.round(durationMean) * 1.5" :value="li.duration" class="mr-2 w-full"/>
               <span class="min-w-[6ch]">{{ li.duration }}</span>
             </div>
           </td>
@@ -165,8 +166,19 @@ const doSingleRequest = async () => {
   fetch( endpoint, {
     method: 'POST',
     headers: {
+      'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
+    body: JSON.stringify( {
+      area: 'string',
+      name: 'string',
+      supplies: [
+        {
+          amount: 100,
+          productid: 0
+        }
+      ]
+    } )
   } )
       .then( response => {
         testLog.value.push( {
