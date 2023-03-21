@@ -10,6 +10,7 @@
       </slot>
     </div>
   </main>
+  <Footer />
 </template>
 
 <script setup>
@@ -17,6 +18,7 @@ import Header from "../layout-parts/Header.vue";
 import PageHeading from "../layout-parts/PageHeading.vue";
 
 import { inject } from "vue";
+import Footer from "../layout-parts/Footer.vue";
 
 const currentPage = inject( 'currentPage' )
 defineProps({

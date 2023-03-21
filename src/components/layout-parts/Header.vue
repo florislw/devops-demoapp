@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-full">
+  <header class="min-h-full">
     <Disclosure as="nav" class="bg-white border-b border-gray-200" v-slot="{ open }">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-12 h-16 items-center">
@@ -39,7 +39,7 @@
     </Disclosure>
 
 
-  </div>
+  </header>
 </template>
 
 <script setup>

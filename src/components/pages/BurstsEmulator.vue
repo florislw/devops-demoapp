@@ -1,129 +1,163 @@
 <template>
   <AppLayout>
-    <Card>
-      <form @submit.prevent="doLoadTest" v-if="endpoint">
-        <div class="mb-4">
-          Endpoint:
-          <input class="inline-block" disabled :value="endpoint"/>
-          &nbsp;
-          <span class="underline text-blue-700 cursor-pointer" @click="currentPageSlug = 'config'">Change</span>
-        </div>
-
-        <Input label="Requests per second" type="number" min="1" max="50" required v-model="rPerSec"/>
-        <Input label="Load test duration (s)" class="mt-4" type="number" required v-model="duration"/>
-        <div class="flex mt-4 justify-end">
-          <Button type="button" class="mr-4" @click="stopLoadTest" v-if="isRunning">
-            Stop
-          </Button>
-          <Button type="submit" :disabled="isRunning">
-            Start
-          </Button>
-        </div>
-      </form>
-      <p v-else>
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+      <Card class="col-span-6">
+        <form @submit.prevent="doLoadTest" v-if="endpoint">
+          <div class="grid grid-cols-2 gap-4">
+            <Input label="Requests per second" type="number" min="1" max="50" required v-model="rPerSec"/>
+            <Input label="Load test duration (s)"  type="number" required v-model="duration"/>
+          </div>
+          <div class="flex mt-4 justify-between items-center">
+            <div class="text-sm flex gap-1 w-full mr-4 items-center">
+              Endpoint:
+              <input class="inline-block w-full px-1 py-2" disabled :value="endpoint"/>
+              &nbsp;
+              <span class="underline text-blue-700 cursor-pointer" @click="currentPageSlug = 'config'">Change</span>
+            </div>
+            <div class="flex">
+              <Button type="button" class="mr-4" @click="stopLoadTest" v-if="isRunning">
+                Stop
+              </Button>
+              <Button type="submit" :disabled="isRunning">
+                Start
+              </Button>
+            </div>
+          </div>
+        </form>
+        <p v-else>
         <span class="underline text-blue-700 cursor-pointer" @click="currentPageSlug = 'config'">
           Define an endpoint</span> to begin.
-      </p>
-    </Card>
+        </p>
+      </Card>
+      <Card class="col-span-6">
+        <h2 class="font-semibold uppercase text-sm mb-4 -mt-6 px-8 pt-2 pb-1 -ml-8 -mr-8 rounded-t-lg bg-gray-50 border-b border-gray-200 text-gray-500">
+          Summary
+        </h2>
+        <table v-if="testLog.length > 0">
+          <tr>
+            <td class="font-bold pr-4">
+              Number of requests
+            </td>
+            <td colspan="2">
+              {{ testLog.length }}
+            </td>
+          </tr>
+          <tr>
+            <td class="font-bold pr-4">
+              Duration
+            </td>
+            <td colspan="2">
+              {{ isRunning ?  'running...' : (actualDuration + ' seconds') }}
+            </td>
+          </tr>
+          <tr>
+            <td rowspan="3" class="align-top font-bold pr-4">
+              Request duration
+            </td>
+            <td class="pr-4">
+              Sum
+            </td>
+            <td>
+              {{ durationSum }} ms
+            </td>
+          </tr>
+          <tr>
+            <td class="pr-4">
+              Mean
+            </td>
+            <td>
+              {{ durationMean }} ms
+            </td>
+          </tr>
+          <tr>
+            <td class="pr-4">
+              Median
+            </td>
+            <td>
+              {{ durationMedian }} ms
+            </td>
+          </tr>
+        </table>
+      </Card>
+      <Card class="col-span-5">
 
-    <Card class="mt-8" v-if="testLog.length > 0">
-      <h2 class="font-bold text-lg mb-4">
-        Summary
-      </h2>
-      <table>
-        <tr>
-          <td class="font-bold pr-4">
-            Number of requests
-          </td>
-          <td colspan="2">
-            {{ testLog.length }}
-          </td>
-        </tr>
-        <tr>
-          <td class="font-bold pr-4">
-            Duration
-          </td>
-          <td colspan="2">
-            {{ isRunning ?  'running...' : (actualDuration + ' seconds') }}
-          </td>
-        </tr>
-        <tr>
-          <td rowspan="3" class="align-top font-bold pr-4">
-            Request duration
-          </td>
-          <td class="pr-4">
-            Sum
-          </td>
-          <td>
-            {{ durationSum }} ms
-          </td>
-        </tr>
-        <tr>
-          <td class="pr-4">
-            Mean
-          </td>
-          <td>
-            {{ durationMean }} ms
-          </td>
-        </tr>
-        <tr>
-          <td class="pr-4">
-            Median
-          </td>
-          <td>
-            {{ durationMedian }} ms
-          </td>
-        </tr>
-      </table>
-    </Card>
-    <Card class="mt-8" v-if="testLog.length > 0">
+        <h2 class="font-semibold uppercase text-sm mb-4 -mt-6 px-8 pt-2 pb-1 -ml-8 -mr-8 rounded-t-lg bg-gray-50 border-b border-gray-200 text-gray-500">
+          Requests
+        </h2>
 
-      <h2 class="font-bold text-lg mb-4">
-        Requests
-      </h2>
+        <div class="mt-4">
+          <Input label="Show all requests" id="show-all-requests" v-model="tableShowAll" type="checkbox"/>
+        </div>
 
-      <div class="mt-4">
-        <Input label="Show all requests" id="show-all-requests" v-model="tableShowAll" type="checkbox"/>
-      </div>
+        <div v-if="testLog.length > 0">
+          <table class="mt-6 w-full">
+            <tr class="font-bold text-left border-b border-gray-300">
+              <th>
 
-      <table class="mt-8 w-full">
-        <tr class="font-bold text-left border-b border-gray-300">
-          <th>
+              </th>
+              <th>
+                Duration (ms)
+              </th>
+              <th>
+                X-Handled-By
+              </th>
+              <th>
+                Status
+              </th>
 
-          </th>
-          <th>
-            Duration (ms)
-          </th>
-          <th>
-            X-Generated-By
-          </th>
-          <th>
-            Status
-          </th>
+            </tr>
+            <tr v-for="(li, idx) in testLogTableData" :key="idx" class="border-b border-gray-300">
+              <td>
+                {{ testLog.length - idx }}
+              </td>
+              <td>
+                <div class="flex items-center mr-8">
+                  <meter min="0" :max="durationMax" optimum="0" :low="Math.round(durationMean)"
+                         :high="Math.round(durationMean) * 1.5" :value="li.duration" class="mr-2 w-full"/>
+                  <span class="min-w-[4ch]">{{ li.duration }}</span>
+                </div>
+              </td>
+              <td>
+                {{ li.serverHeader }}
+              </td>
+              <td>
+                <CheckIcon v-if="li.ok" class="w-4 h-4 text-green-800 inline"/>
+                <XMarkIcon v-else class="w-4 h-4 text-red-800 inline"/>
+                {{ li.status }} {{ li.statusText }}
+              </td>
+            </tr>
+          </table>
 
-        </tr>
-        <tr v-for="(li, idx) in testLogTableData" :key="idx" class="border-b border-gray-300">
-          <td>
-            {{ testLog.length - idx }}
-          </td>
-          <td>
-            <div class="flex items-center mr-8">
-              <meter min="0" :max="durationMax" optimum="0" :low="Math.round(durationMean)"
-                     :high="Math.round(durationMean) * 1.5" :value="li.duration" class="mr-2 w-full"/>
-              <span class="min-w-[6ch]">{{ li.duration }}</span>
+          <div class="flex text-sm mt-4 gap-4 leading-tight">
+            <div class="w-1/3">
+              &le; mean
+              <meter min="0" :max="100" optimum="0" low="50" high="75"
+                     value="25" class="w-full"/>
             </div>
-          </td>
-          <td>
-            {{ li.serverHeader }}
-          </td>
-          <td>
-            <CheckIcon v-if="li.ok" class="w-4 h-4 text-green-800 inline"/>
-            <XMarkIcon v-else class="w-4 h-4 text-red-800 inline"/>
-            {{ li.status }} {{ li.statusText }}
-          </td>
-        </tr>
-      </table>
-    </Card>
+            <div class="w-1/3">
+              &gt; mean
+              <meter min="0" :max="100" optimum="0" low="50" high="75"
+                     value="51" class="w-full"/>
+            </div>
+            <div class="w-1/3">
+              &gt; mean &times; 1.5
+              <meter min="0" :max="100" optimum="0" low="50" high="75"
+                     value="76" class="w-full"/>
+            </div>
+          </div>
+        </div>
+      </Card>
+      <Card class="col-span-7">
+        <h2 class="font-semibold uppercase text-sm mb-4 -mt-6 px-8 pt-2 pb-1 -ml-8 -mr-8 rounded-t-lg bg-gray-50 border-b border-gray-200 text-gray-500">
+          Cloud Infrastructure
+        </h2>
+        <CloudInfrastructure :class="{
+          'to-lambda': testLogTableData[0]?.serverHeader === 'Lambda_Function',
+          'to-ec2': testLogTableData[0]?.serverHeader === 'EC2_Instance',
+          'not-ok': testLogTableData[0] && ! testLogTableData[0]?.serverHeader
+        }" />
+      </Card>
+    </div>
   </AppLayout>
 </template>
 
@@ -134,6 +168,7 @@ import Button from "../forms/Button.vue";
 import Input from "../forms/Input.vue";
 import { CheckIcon, XMarkIcon } from "@heroicons/vue/24/outline/index.js";
 import { computed, inject, onBeforeUnmount, ref } from "vue";
+import CloudInfrastructure from "../CloudInfrastructure.vue";
 
 const currentPageSlug = inject( 'currentPageSlug' )
 const endpoint = localStorage.getItem( 'endpoint' )
@@ -154,7 +189,7 @@ const testLogTableData = computed( () => {
     return []
   }
 
-  const data = tableShowAll.value ? value : value.slice( Math.max( value.length - 5, 0 ) )
+  const data = tableShowAll.value ? value : value.slice( Math.max( value.length - 10, 0 ) )
 
   return data.reverse()
 } )
